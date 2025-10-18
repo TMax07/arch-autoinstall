@@ -1,5 +1,9 @@
 #!/bin/bash
 
+umount -R /mnt > /dev/null
+umount /btrfs > /dev/null
+rm -rf /btrfs > /dev/null
+
 ##################################################################
 # Collection of helper functions
 
@@ -333,14 +337,18 @@ fi
 # mkinitcpio.conf
 HIBERNATION=0
 if [[ "$SWAP_PART" != "" ]]
+then
     while true; do
         echo "Configured a swap partition, do you want to use it for hibernation? yn"
         read -p "" USER_IN
         if [[ "$USER_IN" == "y" || "$USER_IN" == "Y" ]]
         then
             HIBERNATION=1
-            sed -i "s/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems resume fsck)/g" /mnt/etc/mkinitcpio.conf > /dev/null
-        elif [[ "$USER_IN" == "n" || "$USER_IN" == "N" ]]
+            sed -i 's/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems resume fsck)/' /mnt/etc/mkinitcpio.conf > /dev/null
+            break
+        fi
+        if [[ "$USER_IN" == "n" || "$USER_IN" == "N" ]]
+        then
             break
         else
             echo "Invalid input. Try agin" 
@@ -348,8 +356,8 @@ if [[ "$SWAP_PART" != "" ]]
     done
 fi
 echo "Configuring initramfs..."
-sed -i "s/MODULES=()/MODULES=(btrfs)/g" /mnt/etc/mkinitcpio.conf > /dev/null
-sed -i "s/BINARIES=()/BINARIES=(/usr/bin/btrfs)/g" /mnt/etc/mkinitcpio.conf > /dev/null
+sed -i 's/MODULES=()/MODULES=(btrfs)/' /mnt/etc/mkinitcpio.conf > /dev/null
+sed -i 's/BINARIES=()/BINARIES=(\/usr\/bin\/btrfs)/' /mnt/etc/mkinitcpio.conf > /dev/null
 arch-chroot /mnt /bin/bash -c "mkinitcpio -P" > /dev/null
 
 # system user
@@ -380,9 +388,9 @@ while true; do
     fi
 done
 echo "Configuring system user..."
-arch-chroot /mnt /bin/bash -c "echo -e "${PASSWORD}\n${PASSWORD}" | passwd" > /dev/null
+arch-chroot /mnt /bin/bash -c "echo -e \"${PASSWORD}\n${PASSWORD}\" | passwd" > /dev/null
 arch-chroot /mnt /bin/bash -c "useradd -mG wheel $USER" > /dev/null
-arch-chroot /mnt /bin/bash -c "echo -e "${PASSWORD}\n${PASSWORD}" | passwd $USER" > /dev/null
+arch-chroot /mnt /bin/bash -c "echo -e \"${PASSWORD}\n${PASSWORD}\" | passwd $USER" > /dev/null
 echo "%wheel ALL=(ALL:ALL) ALL" >> /mnt/etc/sudoers
 arch-chroot /mnt /bin/bash -c "visudo -c"
 
@@ -420,9 +428,22 @@ arch-chroot /mnt /bin/bash -c "bootctl update" > /dev/null
 
 # post install script 
 echo "Run the default post-install script? Yn"
+read -p "" USER_IN
 if [[ "$USER_IN" != "n" && "$USER_IN" != "N" ]]
 then
-    echo "Downloading post install script..."
-    pacman -Sy --noconfirm git
-    git clone 
+    if [[ -f "/post-install.sh" ]]
+    then
+        mkdir /mnt/install
+        cp /post-install.sh /mnt/install
+    else
+        pacman -Sy --noconfirm git > /dev/null
+        git clone https://github.com/TMax07/arch-autoinstall.git /mnt/install > /dev/null
+    fi
+
+    arch-chroot /mnt /bin/bash -c "chmod 777 /mnt/install/post-install.sh" > /dev/null
+    arch-chroot /mnt /bin/bash -c "chmod +x /mnt/install/post-install.sh" > /dev/null
+    echo "/install/post-install.sh" >> /mnt/home/$USER/.bash_profile
 fi
+
+# done 
+echo "DONE!"

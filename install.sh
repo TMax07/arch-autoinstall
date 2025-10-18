@@ -2,10 +2,6 @@
 
 set -euo pipefail
 
-umount -R /mnt
-umount /btrfs
-rm -rf /btrfs
-
 ##################################################################
 # Collection of helper functions
 
@@ -249,7 +245,7 @@ echo "Updating pacman mirrorlist..."
 
 # install the most basic packages
 echo "Running pacstrap with most basic packages..."
-PACSTRAP_PACKAGES="base base-devel linux linux-firmware nano git btrfs-progs networkmanager sudo"
+PACSTRAP_PACKAGES="base base-devel linux linux-firmware nano git btrfs-progs networkmanager sudo efibootmgr"
 if lscpu | grep -q Intel
 then
     echo "Selecting intel_ucode..."
@@ -445,4 +441,3 @@ fi
 
 # done 
 echo "DONE!"
-umount -R /mnt

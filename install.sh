@@ -1,8 +1,10 @@
 #!/bin/bash
 
-umount -R /mnt > /dev/null
-umount /btrfs > /dev/null
-rm -rf /btrfs > /dev/null
+set -euo pipefail
+
+umount -R /mnt
+umount /btrfs
+rm -rf /btrfs
 
 ##################################################################
 # Collection of helper functions
@@ -11,7 +13,7 @@ rm -rf /btrfs > /dev/null
 ##################################################################
 
 # Check for internet connection
-if ping -c 1 ping.archlinux.org > /dev/null
+if ping -c 1 ping.archlinux.org
 then 
     echo "Connected to the internet, continueing..."
 else 
@@ -20,8 +22,8 @@ else
 fi
 
 echo "Updating the system clock..."
-timedatectl > /dev/null
-timedatectl set-ntp true > /dev/null
+timedatectl
+timedatectl set-ntp true
 
 # Choose a disk
 echo "--- Choose a disk:"
@@ -95,8 +97,8 @@ while true; do
         then
             echo "Wiping disk..."
             # new GPT
-            sgdisk --zap-all "$SELECTED_DISK" > /dev/null
-            wipefs -a $SELECTED_DISK > /dev/null
+            sgdisk --zap-all "$SELECTED_DISK"
+            wipefs -a "$SELECTED_DISK"
 
             echo "Creating partitions..."
             # swap
@@ -105,7 +107,7 @@ while true; do
 
             echo "=== EFI"
             # create a new (1GiB) EFI partition
-            sgdisk --new="$DISK_PART:$DISK_START:+1G" --typecode="$DISK_PART:C12A7328-F81F-11D2-BA4B-00A0C93EC93B" "$SELECTED_DISK" > /dev/null
+            sgdisk --new="$DISK_PART:$DISK_START:+1G" --typecode="$DISK_PART:C12A7328-F81F-11D2-BA4B-00A0C93EC93B" "$SELECTED_DISK"
             DISK_START=$(sgdisk -p "$SELECTED_DISK" | awk '/^ *[0-9]+/{last=$3} END {print last}')
             DISK_START=$((DISK_START+1))
             DISK_PART=$((DISK_PART+1))
@@ -114,7 +116,7 @@ while true; do
             then
                 echo "=== SWAP"
                 # create a new swap partition
-                sgdisk --new="$DISK_PART:$DISK_START:+${SWAP_SIZE}G" --typecode="$DISK_PART:0657FD6D-A4AB-43C4-84E5-0933C84B4F4F" "$SELECTED_DISK" > /dev/null
+                sgdisk --new="$DISK_PART:$DISK_START:+${SWAP_SIZE}G" --typecode="$DISK_PART:0657FD6D-A4AB-43C4-84E5-0933C84B4F4F" "$SELECTED_DISK"
                 DISK_START=$(sgdisk -p "$SELECTED_DISK" | awk '/^ *[0-9]+/{last=$3} END {print last}') 
                 DISK_START=$((DISK_START+1))
                 DISK_PART=$((DISK_PART+1))
@@ -122,10 +124,10 @@ while true; do
 
             echo "=== ROOT"
             # create a root partiton
-            sgdisk --new="$DISK_PART:$DISK_START:0" --typecode="$DISK_PART:4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709" "$SELECTED_DISK" > /dev/null
+            sgdisk --new="$DISK_PART:$DISK_START:0" --typecode="$DISK_PART:4F68BCE3-E8CD-4DB1-96E7-FBCAF984B709" "$SELECTED_DISK"
 
             DISK_PART_NAME="$SELECTED_DISK"
-            if [[ "$SELECTED_DISK" == "nvme*" ]]
+            if [[ "$SELECTED_DISK" == "/dev/nvme*" ]]
             then
                 DISK_PART_NAME="${SELECTED_DISK}p"
             fi
@@ -135,7 +137,7 @@ while true; do
             DISK_PART=1
             # format EFI as FAT32
             EFI_PART="$DISK_PART_NAME$DISK_PART"
-            mkfs.vfat -F32 "$EFI_PART" > /dev/null
+            mkfs.vfat -F32 "$EFI_PART"
             DISK_PART=$((DISK_PART+1))
 
             # format swap
@@ -144,94 +146,94 @@ while true; do
             then
                 echo "=== SWAP"
                 SWAP_PART="${DISK_PART_NAME}$DISK_PART"
-                mkswap -qf "$SWAP_PART" > /dev/null
+                mkswap -qf "$SWAP_PART"
                 DISK_PART=$((DISK_PART+1))
             fi
 
             echo "=== ROOT"
             # format root partition as btrfs
             ROOT_PART="${DISK_PART_NAME}$DISK_PART"
-            mkfs.btrfs -f "$ROOT_PART" > /dev/null
+            mkfs.btrfs -f "$ROOT_PART"
             
             # create btrfs subvolumes
             echo "Creating btrfs subvolumes..."
-            mount "$ROOT_PART" /mnt > /dev/null
+            mount "$ROOT_PART" /mnt
 
             echo "=== /"
-            btrfs subvolume create /mnt/@ > /dev/null
+            btrfs subvolume create /mnt/@
 
             echo "=== /config"
-            btrfs subvolume create /mnt/@config > /dev/null
+            btrfs subvolume create /mnt/@config
 
             echo "=== /home"
-            btrfs subvolume create /mnt/@home > /dev/null
+            btrfs subvolume create /mnt/@home
 
             echo "=== /var"
-            btrfs subvolume create /mnt/@var > /dev/null
+            btrfs subvolume create /mnt/@var
 
             echo "=== /var/log"
-            btrfs subvolume create /mnt/@var/log > /dev/null
+            btrfs subvolume create /mnt/@var/log
 
             echo "=== /var/cache"
-            btrfs subvolume create /mnt/@var/cache > /dev/null
+            btrfs subvolume create /mnt/@var/cache
 
             echo "=== /tmp"
-            btrfs subvolume create /mnt/@tmp > /dev/null
+            btrfs subvolume create /mnt/@tmp
 
             echo "=== /.snapshots"
-            btrfs subvolume create /mnt/@.snapshots > /dev/null
+            btrfs subvolume create /mnt/@.snapshots
 
-            umount /mnt > /dev/null
+            umount /mnt
 
 
             # mount the system
             echo "Mounting..."
             echo "=== SUBVOL@"
-            mount -o rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@ "$ROOT_PART" /mnt > /dev/null
+            mount -o rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@ "$ROOT_PART" /mnt
 
             echo "=== SUBVOL@config"
             SUBVOL="config"
-            mkdir -p "/mnt/$SUBVOL" > /dev/null
-            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL" > /dev/null
+            mkdir -p "/mnt/$SUBVOL"
+            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL"
 
             echo "=== SUBVOL@home"
             SUBVOL="home"
-            mkdir -p "/mnt/$SUBVOL" > /dev/null
-            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL" > /dev/null
+            mkdir -p "/mnt/$SUBVOL"
+            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL"
 
             echo "=== SUBVOL@var"
             SUBVOL="var"
-            mkdir -p "/mnt/$SUBVOL" > /dev/null
-            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL" > /dev/null
+            mkdir -p "/mnt/$SUBVOL"
+            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL"
 
             echo "=== SUBVOL@var/log"
             SUBVOL="var/log"
-            mkdir -p "/mnt/$SUBVOL" > /dev/null
-            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL" > /dev/null
+            mkdir -p "/mnt/$SUBVOL"
+            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL"
 
             echo "=== SUBVOL@var/cache"
             SUBVOL="var/cache"
-            mkdir -p "/mnt/$SUBVOL" > /dev/null
-            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL" > /dev/null
+            mkdir -p "/mnt/$SUBVOL"
+            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL"
 
             echo "=== SUBVOL@tmp"
             SUBVOL="tmp"
-            mkdir -p "/mnt/$SUBVOL" > /dev/null
-            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL" > /dev/null
+            mkdir -p "/mnt/$SUBVOL"
+            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL"
 
             echo "=== SUBVOL@.snapshots"
             SUBVOL=".snapshots"
-            mkdir -p "/mnt/$SUBVOL" > /dev/null
-            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL" > /dev/null
+            mkdir -p "/mnt/$SUBVOL"
+            mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL"
 
             echo "=== BOOT"
-            mkdir -p "/mnt/boot" > /dev/null
-            mount "$EFI_PART" /mnt/boot > /dev/null
+            mkdir -p "/mnt/boot"
+            mount "$EFI_PART" /mnt/boot
             
             if [[ "$SWAP_PART" != "" ]]
             then
                 echo "Enabeling swap..."
-                swapon "$SWAP_PART" > /dev/null
+                swapon "$SWAP_PART"
             fi
             break
         fi
@@ -261,7 +263,7 @@ pacstrap -K /mnt $PACSTRAP_PACKAGES
 
 # fstab
 echo "Generating fstab..."
-genfstab -U /mnt >> /mnt/etc/fstab > /dev/null
+genfstab -U /mnt >> /mnt/etc/fstab
 
 # time
 while true; do
@@ -292,7 +294,7 @@ while true; do
 done
 
 echo "Setting time..."
-arch-chroot /mnt /bin/bash -c "ln -sf "/usr/share/zoneinfo${ZONE}/$CITY" /etc/localtime"
+arch-chroot /mnt /bin/bash -c "ln -sf "/usr/share/zoneinfo/${ZONE}/$CITY" /etc/localtime"
 arch-chroot /mnt /bin/bash -c "hwclock --systohc"
 
 # set locale
@@ -300,7 +302,7 @@ echo "Setting language..."
 echo "" >> /mnt/etc/locale.gen
 echo "en_US.UTF-8 UTF-8" >> /mnt/etc/locale.gen
 echo "" >> /mnt/etc/locale.gen
-arch-chroot /mnt /bin/bash -c "locale-gen" > /dev/null
+arch-chroot /mnt /bin/bash -c "locale-gen"
 echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
 
 # keyboard layout
@@ -344,7 +346,7 @@ then
         if [[ "$USER_IN" == "y" || "$USER_IN" == "Y" ]]
         then
             HIBERNATION=1
-            sed -i 's/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems resume fsck)/' /mnt/etc/mkinitcpio.conf > /dev/null
+            sed -i '/^HOOKS=/ s/)/ resume &/' /mnt/etc/mkinitcpio.conf
             break
         fi
         if [[ "$USER_IN" == "n" || "$USER_IN" == "N" ]]
@@ -356,9 +358,9 @@ then
     done
 fi
 echo "Configuring initramfs..."
-sed -i 's/MODULES=()/MODULES=(btrfs)/' /mnt/etc/mkinitcpio.conf > /dev/null
-sed -i 's/BINARIES=()/BINARIES=(\/usr\/bin\/btrfs)/' /mnt/etc/mkinitcpio.conf > /dev/null
-arch-chroot /mnt /bin/bash -c "mkinitcpio -P" > /dev/null
+sed -i 's/MODULES=()/MODULES=(btrfs)/' /mnt/etc/mkinitcpio.conf
+sed -i 's/BINARIES=()/BINARIES=(\/usr\/bin\/btrfs)/' /mnt/etc/mkinitcpio.conf
+arch-chroot /mnt /bin/bash -c "mkinitcpio -P"
 
 # system user
 while true; do
@@ -388,9 +390,9 @@ while true; do
     fi
 done
 echo "Configuring system user..."
-arch-chroot /mnt /bin/bash -c "echo -e \"${PASSWORD}\n${PASSWORD}\" | passwd" > /dev/null
-arch-chroot /mnt /bin/bash -c "useradd -mG wheel $USER" > /dev/null
-arch-chroot /mnt /bin/bash -c "echo -e \"${PASSWORD}\n${PASSWORD}\" | passwd $USER" > /dev/null
+arch-chroot /mnt /bin/bash -c "echo -e \"${PASSWORD}\n${PASSWORD}\" | passwd"
+arch-chroot /mnt /bin/bash -c "useradd -mG wheel $USER"
+arch-chroot /mnt /bin/bash -c "echo -e \"${PASSWORD}\n${PASSWORD}\" | passwd $USER"
 echo "%wheel ALL=(ALL:ALL) ALL" >> /mnt/etc/sudoers
 arch-chroot /mnt /bin/bash -c "visudo -c"
 
@@ -402,29 +404,26 @@ echo "timeout 0" > /mnt/boot/loader/loader.conf
 echo "console-mode max" >> /mnt/boot/loader/loader.conf
 echo "editor no" >> /mnt/boot/loader/loader.conf
 
-mkdir /btrfs
-mount -o "subvolid=5" $ROOT_PART /btrfs
-BTRFS_ROOT_UUID=$(btrfs subvolume show /btrfs/@ | grep UUID | awk '{print $2}' | grep -)
-umount /btrfs
+ROOT_UUID=$(blkid -s UUID -o value "$ROOT_PART")
 
 RESUME_OPTIONS=""
 if [[ "$HIBERNATION" == 1 ]]
 then
-    SWAP_PART_UUID=$(lsblk -dno UUID $SWAP_PART)
+    SWAP_PART_UUID=$(blkid -s UUID -o value "$SWAP_PART")
     RESUME_OPTIONS="resume=UUID=$SWAP_PART_UUID"
 fi
 
 echo "title Arch Linux" > /mnt/boot/loader/entries/9-arch.conf
 echo "linux /vmlinuz-linux" >> /mnt/boot/loader/entries/9-arch.conf
 echo "initrd /initramfs-linux.img" >> /mnt/boot/loader/entries/9-arch.conf
-echo "options root=UUID=$BTRFS_ROOT_UUID rootflags=subvol=@ zswap.enabled=$ZSWAP_ENABLED rw rootfstype=btrfs $RESUME_OPTIONS" >> /mnt/boot/loader/entries/9-arch.conf
+echo "options root=UUID=$ROOT_UUID rootflags=subvol=@ zswap.enabled=$ZSWAP_ENABLED rw rootfstype=btrfs $RESUME_OPTIONS" >> /mnt/boot/loader/entries/9-arch.conf
 
 echo "title Arch Linux (Fallback initramfs)" > /mnt/boot/loader/entries/0-arch-fallback.conf
 echo "linux /vmlinuz-linux" >> /mnt/boot/loader/entries/0-arch-fallback.conf
 echo "initrd /initramfs-linux-fallback.img" >> /mnt/boot/loader/entries/0-arch-fallback.conf
-echo "options root=UUID=$BTRFS_ROOT_UUID rootflags=subvol=@ zswap.enabled=$ZSWAP_ENABLED rw rootfstype=btrfs" >> /mnt/boot/loader/entries/0-arch-fallback.conf
+echo "options root=UUID=$ROOT_UUID rootflags=subvol=@ zswap.enabled=0 rw rootfstype=btrfs" >> /mnt/boot/loader/entries/0-arch-fallback.conf
 
-arch-chroot /mnt /bin/bash -c "bootctl update" > /dev/null
+arch-chroot /mnt /bin/bash -c "bootctl update"
 
 # post install script 
 echo "Run the default post-install script? Yn"
@@ -436,14 +435,14 @@ then
         mkdir /mnt/install
         cp /post-install.sh /mnt/install
     else
-        pacman -Sy --noconfirm git > /dev/null
-        git clone https://github.com/TMax07/arch-autoinstall.git /mnt/install > /dev/null
+        pacman -Sy --noconfirm git
+        git clone https://github.com/TMax07/arch-autoinstall.git /mnt/install
     fi
 
-    arch-chroot /mnt /bin/bash -c "chmod 777 /mnt/install/post-install.sh" > /dev/null
-    arch-chroot /mnt /bin/bash -c "chmod +x /mnt/install/post-install.sh" > /dev/null
+    arch-chroot /mnt /bin/bash -c "chmod 777 /install/post-install.sh"
     echo "/install/post-install.sh" >> /mnt/home/$USER/.bash_profile
 fi
 
 # done 
 echo "DONE!"
+umount -R /mnt

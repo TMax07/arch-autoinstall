@@ -25,17 +25,10 @@ function link_config_to_dir() {
 
 #####################################################
 
-echo "Setting up reflector..."
+echo "Setting up ntp..."
 
-if_not_dir_mk_dir "/etc/xdg"
-if_not_dir_mk_dir "/etc/xdg/reflector"
-if_file_exists_rm "/etc/xdg/reflector/reflector.conf"
+if_not_dir_mk_dir "/etc/systemd"
+if_file_exists_rm "/etc/systemd/timesyncd.conf"
+link_config_to_dir "/config/systemd/timesyncd.conf" "/etc/systemd/timesyncd.conf"
 
-link_config_to_dir "/config/reflector/reflector.conf" "/etc/xdg/reflector/reflector.conf"
-
-sudo pacman -S --noconfirm reflector
-
-sudo systemctl enable reflector.timer
-sudo systemctl start --now reflector.timer 
-
-sudo systemctl start reflector.service
+sudo timedatectl set-ntp true

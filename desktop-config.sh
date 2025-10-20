@@ -14,3 +14,11 @@ else
 fi
 
 sudo /install/scripts/reflector.sh
+sudo /install/scripts/pacman.sh
+sudo /install/scripts/timesyncd.sh
+sudo /install/scripts/sssd.sh
+sudo /install/scripts/cron.sh
+sudo /install/scripts/yay.sh
+sudo /install/scripts/auto-cpufreq.sh
+sudo /install/scripts/autofs.sh
+sudo /install/scripts/snapper.sh

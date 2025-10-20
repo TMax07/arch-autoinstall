@@ -25,17 +25,13 @@ function link_config_to_dir() {
 
 #####################################################
 
-echo "Setting up reflector..."
+echo "Setting up SSSD..."
 
-if_not_dir_mk_dir "/etc/xdg"
-if_not_dir_mk_dir "/etc/xdg/reflector"
-if_file_exists_rm "/etc/xdg/reflector/reflector.conf"
+sudo pacman -S sssd
 
-link_config_to_dir "/config/reflector/reflector.conf" "/etc/xdg/reflector/reflector.conf"
-
-sudo pacman -S --noconfirm reflector
-
-sudo systemctl enable reflector.timer
-sudo systemctl start --now reflector.timer 
-
-sudo systemctl start reflector.service
+if_not_dir_mk_dir "/etc/sssd"
+if_file_exists_rm "/etc/sssd/sssd.conf"
+link_config_to_dir "/config/sssd/sssd.conf" "/etc/sssd/sssd.conf"
+if_not_dir_mk_dir "/etc/pam.d"
+if_file_exists_rm "/etc/pam.d/sssd"
+link_config_to_dir "/config/sssd/pam.conf" "/etc/pam.d/sssd"

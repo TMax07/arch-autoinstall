@@ -38,4 +38,5 @@ sudo pacman -S --noconfirm reflector
 sudo systemctl enable reflector.timer
 sudo systemctl start --now reflector.timer 
 
+echo "Finding best pacman mirrors..."
 sudo systemctl start reflector.service

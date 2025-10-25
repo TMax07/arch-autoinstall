@@ -33,4 +33,4 @@ makepkg -si
 cd ..
 rm -rf ~/yay
 
-sudo yay -Syu
+yay -Syu

@@ -31,6 +31,7 @@ while [[ $# -gt 0 ]]; do
             echo "--zswap VALUE 0 or 1, 1 to use zswap, 0 to use zram"
             echo "--zone VALUE a valid zone entry"
             echo "--city VALUE a valid city entry"
+            ;;
         -y)
             NO_CONFIRM=1
             ;;
@@ -74,7 +75,7 @@ PACSTRAP_PACKAGES="base base-devel linux linux-firmware nano git btrfs-progs net
 
 # Greet
 echo "Welcome to TMax07's arch install script :D"
-if NO_CONFIRM == 0
+if [[ "$NO_CONFIRM" == "$0" ]]
 then
     echo "You will be asked to confirm some settings and choose a few options"
     echo "This script supports (almost) silent installs. Start the script with '--help' to list the options that need to be specified for silent installs"
@@ -123,7 +124,7 @@ then
                     SWAP_PART_SIZE="$USER_IN"
                     echo "Create a swap partion of size: $SWAP_PART_SIZE ? Yn"
                     read -p "" USER_IN
-                    if [[ ("$USER_IN" != "y" && "$USER_IN" != "Y" && "$USER_IN" != "n") ]]
+                    if [[ ("$USER_IN" != "y" && "$USER_IN" != "Y" && "$USER_IN" != "") ]]
                     then 
                         if [[ "$USER_IN" == "n" || "$USER_IN" == "N" ]]
                         then
@@ -141,14 +142,20 @@ then
                     continue
                 fi
             done
-        else
+            break
+        elif [[ "$USER_IN" == "n" || "$USER_IN" == "N" ]]
+        then
             SWAP_PART_SIZE="0"
+            break
+        else
+            echo "Invalid option, please try again..."
         fi
     done
 fi
 
 # ZRAM or ZSWAP
 if [[ "$ZSWAP_ENABLED" == "" ]]
+then
     while true; do
         echo "Please choose wether to use ZSWAP or swap to ZRAM"
         echo "If you do not want an additional swap device use ZSWAP"
@@ -160,8 +167,10 @@ if [[ "$ZSWAP_ENABLED" == "" ]]
         then
             echo "Will use ZRAM..."
             PACSTRAP_PACKAGES="$PACSTRAP_PACKAGES zram-generator"
+            ZSWAP_ENABLED=0
+            break
         fi
-        if [[ "$USER_IN" == "2"]]
+        if [[ "$USER_IN" == "2" ]]
         then
             echo "Will use ZSWAP"
             ZSWAP_ENABLED=1
@@ -172,6 +181,7 @@ fi
 
 # Region
 if [[ "$ZONE" == "" || "$CITY" == "" ]]
+then
     while true; do
         echo "Choose a region: "
         ls /usr/share/zoneinfo
@@ -218,7 +228,7 @@ while true; do
     fi
 done
 
-if NO_CONFIRM == 0
+if [[ "$NO_CONFIRM" == "0" ]]
 then
     while true; do
         echo "This will wipe all data on the disk, do you want to continue? yN"
@@ -390,7 +400,7 @@ SUBVOL="tmp"
 mkdir -p "/mnt/$SUBVOL"
 mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL"
 
-echo "=== SUBVOL@.napshots"
+echo "=== SUBVOL@.snapshots"
 SUBVOL="snapshots"
 mkdir -p "/mnt/$SUBVOL"
 mount -o "rw,relatime,compress=zstd:3,ssd,discard=async,space_cache=v2,subvol=@$SUBVOL" "$ROOT_PART" "/mnt/$SUBVOL"
@@ -448,11 +458,11 @@ echo "KEYMAP=us" > /mnt/etc/vconsole.conf
 
 # hostname
 while true; do
-    echo "Type in your hostname: "
-    read -p "" USER_IN
+    echo "Type in your hostname:"
+    read USER_IN
     HOSTNAME="$USER_IN"
     echo "Set hostname to '${HOSTNAME}'? Yn"
-    read -p "" USER_IN
+    read USER_IN
     if [[ "$USER_IN" == "n" || "$USER_IN" == "N" ]]
     then
         continue
@@ -517,12 +527,13 @@ while true; do
         break
     fi
 done
+PASSWORD=""
 while true; do
     echo "Type in the system password"
-    read -s -p "" USER_IN
+    read -s USER_IN
     PASSWORD="$USER_IN"
     echo "Retype the system password"
-    read -s -p "" USER_IN
+    read -s USER_IN
     if [[ "$PASSWORD" == "$USER_IN" ]]
     then
         break
@@ -567,7 +578,7 @@ echo "options root=UUID=$ROOT_UUID rootflags=subvol=@ zswap.enabled=0 rw rootfst
 arch-chroot /mnt /bin/bash -c "bootctl update"
 
 # post install script 
-if NO_CONFIRM == 0
+if [[ "$NO_CONFIRM" == "$0" ]]
 then
     echo "Run the default post-install script? Yn"
     read -p "" USER_IN

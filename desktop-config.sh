@@ -2,14 +2,6 @@
 
 echo "Configuring a desktop install..."
 
-if ping -c 1 ping.archlinux.org
-then 
-    echo "Connected to the internet, continueing..."
-else 
-    echo "No internet connection, please connect to the internet and restart the system"
-    exit 1
-fi
-
 /install/scripts/reflector.sh
 /install/scripts/pacman.sh
 /install/scripts/timesyncd.sh

@@ -577,11 +577,11 @@ echo "options root=UUID=$ROOT_UUID rootflags=subvol=@ zswap.enabled=0 rw rootfst
 
 arch-chroot /mnt /bin/bash -c "bootctl update"
 
-# post install script 
-if [[ "$NO_CONFIRM" == "$0" ]]
+# post install script
+if [[ "$NO_CONFIRM" == "0" ]]
 then
     echo "Run the default post-install script? Yn"
-    read -p "" USER_IN
+    read USER_IN
     if [[ "$USER_IN" != "n" && "$USER_IN" != "N" ]]
     then
         if [[ -f "/post-install.sh" ]]

@@ -61,8 +61,8 @@ while true; do
     fi
 done
 
-sed -i "s/USERNAME/$USER/" /config/autofs/auto.nas
-sed -i "s/PASSWORD/$PASSWORD/" /config/autofs/auto.nas
+sudo sed -i "s/USERNAME/$USER/" /config/autofs/auto.nas
+sudo sed -i "s/PASSWORD/$PASSWORD/" /config/autofs/auto.nas
 
 while true; do
     echo "Choose a mount point for autofs"

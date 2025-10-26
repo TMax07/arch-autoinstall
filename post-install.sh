@@ -55,5 +55,24 @@ done
 sudo chmod +x /install/package_install.sh
 /install/package_install.sh
 
+echo "Removing installer script autostart entry..."
+USER=$(whoami)
+sudo sed '/###--t--###--m--###--p--###/,/###--t--###--m--###--p--###/' /home/$USER/.bash_profile > /home/$USER/.bash_profile
+
+while true; do
+    echo "Would you like to remove the install scripts? Yn"
+    read USER_IN
+    if [[ "$USER_IN" == "y" || "$USER_IN" == "Y" || "$USER_IN" == "" ]]
+    then
+        sudo rm -rf /install
+        break
+    elif [[ "$USER_IN" == "n" || "$USER_IN" == "N" ]]
+    then
+        break
+    else
+        echo "Invalid input..."
+    fi
+done
+
 echo "Install finished!"
 echo "Have fun :D"

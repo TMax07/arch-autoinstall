@@ -31,6 +31,7 @@ while [[ $# -gt 0 ]]; do
             echo "--zswap VALUE 0 or 1, 1 to use zswap, 0 to use zram"
             echo "--zone VALUE a valid zone entry"
             echo "--city VALUE a valid city entry"
+            exit 0
             ;;
         -y)
             NO_CONFIRM=1
@@ -592,16 +593,16 @@ then
             pacman -Sy --noconfirm git
             git clone https://github.com/TMax07/arch-autoinstall.git /mnt/install
         fi
-
-        arch-chroot /mnt /bin/bash -c "chmod 777 /install/post-install.sh"
-        echo "/install/post-install.sh" >> /mnt/home/$USER/.bash_profile
     fi
 else
     pacman -Sy --noconfirm git
     git clone https://github.com/TMax07/arch-autoinstall.git /mnt/install
-    arch-chroot /mnt /bin/bash -c "chmod 777 /install/post-install.sh"
-    echo "/install/post-install.sh" >> /mnt/home/$USER/.bash_profile
 fi
+
+arch-chroot /mnt /bin/bash -c "chmod 777 /install/post-install.sh"
+echo "###--t--###--m--###--p--###" >> /mnt/home/$USER/.bash_profile
+echo "/install/post-install.sh" >> /mnt/home/$USER/.bash_profile
+echo "###--t--###--m--###--p--###" >> /mnt/home/$USER/.bash_profile
 
 # done 
 echo "DONE!"

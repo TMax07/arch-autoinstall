@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-#set -euo pipefail
+#!/bin/bash
 
 INPUT_FILE="/config/pkgs"
 
@@ -8,10 +7,13 @@ if [[ ! -f "$INPUT_FILE" ]]; then
     exit 1
 fi
 
+INPUT_FILE_TXT=$(cat $INPUT_FILE)
+
 # Read exclude list
 echo "Available groups: "
 current_group=0
-while IFS= read -r line || [[ -n "$line" ]]; do
+for line in $INPUT_FILE_TXT
+do
     # Skip empty lines
     [[ -z "$line" ]] && continue
 
@@ -20,7 +22,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         ((current_group++))
         echo "$current_group) ${line#*===}"
     fi
-done < "$INPUT_FILE"
+done
 read -rp "Enter group numbers to exclude (e.g., 1 4 9): " -a EXCLUDED_GROUPS
 
 is_excluded() {
@@ -38,14 +40,43 @@ read_pkg_line() {
     PKG_NAME="${line%%:::*}"
     rest="${line#*:::}"
     DL_CL="${rest%%:::*}"
-    PATH="${rest#*:::}"
-    [[ "$PATH" == "$rest" ]] && PATH="" 
+    SCRIPT_PATH="${rest#*:::}"
+    [[ "$SCRIPT_PATH" == "$rest" ]] && SCRIPT_PATH="" 
 }
 
 current_group=0
 include_group=true
+cur_pacman_pkgs=""
+cur_yay_pkgs=""
+cur_flatpak_pks=""
+cur_flathub_pks=""
 
-while IFS= read -r line || [[ -n "$line" ]]; do
+function install_pkgs() {
+    if [[ "$cur_flathub_pks" != "" ]]
+    then
+        flatpak install flathub -y "$cur_flathub_pks"
+    fi
+    if [[ "$cur_flatpak_pks" != "" ]]
+    then
+        flatpak install -y "$cur_flatpak_pks"
+    fi
+    if [[ "$cur_yay_pkgs" != "" ]]
+    then
+        yay -S --noconfirm "$cur_yay_pkgs"
+    fi
+    if [[ "$cur_pacman_pkgs" != "" ]]
+    then
+        pacman -S --noconfirm "$cur_pacman_pkgs"
+    fi
+
+    cur_pacman_pkgs=""
+    cur_yay_pkgs=""
+    cur_flatpak_pks=""
+    cur_flathub_pks=""
+}
+
+for line in $INPUT_FILE_TXT
+do
     # Skip empty lines
     [[ -z "$line" ]] && continue
 
@@ -67,7 +98,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
         continue
     fi
 
-    # Parse line: PKG_NAME:::DL_CL:::PATH (PATH optional)
+    # Parse line: PKG_NAME:::DL_CL:::SCRIPT_PATH (SCRIPT_PATH optional)
     read_pkg_line "$line"
 
     if [[ -z "$PKG_NAME" || -z "$DL_CL" ]]; then
@@ -77,18 +108,24 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
     echo "Installing $PKG_NAME via $DL_CL..."
 
+    # Batch pkgs for install
     case "$DL_CL" in
         pacman)
+            cur_pacman_pkgs="$cur_pacman_pkgs $PKG_NAME"
             sudo pacman -S --noconfirm "$PKG_NAME"
             ;;
         yay)
+            cur_yay_pkgs="$cur_yay_pkgs $PKG_NAME"
             yay -S --noconfirm "$PKG_NAME"
             ;;
         flatpak)
+            cur_flatpak_pks="$cur_flatpak_pks $PKG_NAME"
             flatpak install -y "$PKG_NAME"
             ;;
         flathub)
+            cur_flathub_pks="$cur_flathub_pks $PKG_NAME"
             flatpak install flathub -y "$PKG_NAME"
+            ;;
         *)
             echo "Unknown installer type '$DL_CL' for package '$PKG_NAME'"
             continue
@@ -96,10 +133,14 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     esac
 
     # Run optional post-install script
-    if [[ -n "$PATH" && -f "$PATH" ]]; then
-        sudo chmod +x "$PATH"
-        sudo bash "$PATH"
+    # Break batch on install script
+    if [[ -n "$SCRIPT_PATH" && -f "$SCRIPT_PATH" ]]; then
+        install_pkgs
+
+        sudo chmod +x "$SCRIPT_PATH"
+        sudo bash "$SCRIPT_PATH"
     fi
+done
 
-done < "$INPUT_FILE"
-
+# straggling packages
+install_pkgs

@@ -33,4 +33,4 @@ makepkg -si
 cd ..
 rm -rf ~/yay
 
-yay -Syu
+yay -Syu --noconfirm

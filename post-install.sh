@@ -25,6 +25,7 @@ while true; do
                 echo "Please connect to the internet and then either restart your system or start the cript again manually"
                 echo "The script is located under /install/post-install.sh"
                 exit 0
+            fi
         done
     fi
 done 

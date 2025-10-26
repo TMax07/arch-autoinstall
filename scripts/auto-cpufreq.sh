@@ -27,5 +27,5 @@ function link_config_to_dir() {
 
 echo "Setting up auto-cpufreq..."
 
-yay -S auto-cpufreq
+yay -S --noconfirm auto-cpufreq
 sudo systemctl enable --now auto-cpufreq

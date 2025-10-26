@@ -27,8 +27,8 @@ function link_config_to_dir() {
 
 echo "Setting up autofs..."
 
-sudo pacman -S samba
-yay -S autofs
+sudo pacman -S --noconfirm samba
+yay -S --noconfirm autofs
 
 if_not_dir_mk_dir "/etc/autofs"
 if_file_exists_rm "/etc/autofs/autofs.conf"

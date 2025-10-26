@@ -27,7 +27,7 @@ function link_config_to_dir() {
 
 echo "Setting up SSSD..."
 
-sudo pacman -S sssd
+sudo pacman -S --noconfirm sssd
 
 if_not_dir_mk_dir "/etc/sssd"
 if_file_exists_rm "/etc/sssd/sssd.conf"

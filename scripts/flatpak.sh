@@ -27,6 +27,6 @@ function link_config_to_dir() {
 
 echo "Setting up flatpak..."
 
-sudo pacman -S flatpak
+sudo pacman -S --noconfirm flatpak
 
 flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo

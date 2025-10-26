@@ -30,4 +30,4 @@ echo "Setting up pacman..."
 if_file_exists_rm "/etc/pacman.conf"
 link_config_to_dir "/config/pacman/pacman.conf" "/etc/pacman.conf"
 
-sudo pacman -Syu
+sudo pacman -Syu --noconfirm

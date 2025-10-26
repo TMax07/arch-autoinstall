@@ -112,19 +112,19 @@ do
     case "$DL_CL" in
         pacman)
             cur_pacman_pkgs="$cur_pacman_pkgs $PKG_NAME"
-            sudo pacman -S --noconfirm "$PKG_NAME"
+            #sudo pacman -S --noconfirm "$PKG_NAME"
             ;;
         yay)
             cur_yay_pkgs="$cur_yay_pkgs $PKG_NAME"
-            yay -S --noconfirm "$PKG_NAME"
+            #yay -S --noconfirm "$PKG_NAME"
             ;;
         flatpak)
             cur_flatpak_pks="$cur_flatpak_pks $PKG_NAME"
-            flatpak install -y "$PKG_NAME"
+            #flatpak install -y "$PKG_NAME"
             ;;
         flathub)
             cur_flathub_pks="$cur_flathub_pks $PKG_NAME"
-            flatpak install flathub -y "$PKG_NAME"
+            #flatpak install flathub -y "$PKG_NAME"
             ;;
         *)
             echo "Unknown installer type '$DL_CL' for package '$PKG_NAME'"

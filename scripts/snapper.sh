@@ -31,7 +31,7 @@ link_config_to_dir "/config/locate/updatedb.conf" "/etc/updatedb.conf"
 
 echo "Setting up snapper..."
 
-sudo pacman -S snapper btrfs-assistant
+sudo pacman -S --noconfirm snapper btrfs-assistant
 
 sudo umount /.snapshots
 sudo rm -r /.snapshots
@@ -52,4 +52,4 @@ sudo systemctl enable --now snapper-timeline.timer
 sudo systemctl enable --now snapper-cleanup.timer
 
 echo "Setting up pacman hooks..."
-sudo pacman -S snap-pac
+sudo pacman -S --noconfirm snap-pac

@@ -29,7 +29,7 @@ echo "Setting up yay..."
 
 git clone https://aur.archlinux.org/yay.git ~/yay
 cd ~/yay
-makepkg -si
+makepkg -si --noconfirm
 cd ..
 rm -rf ~/yay
 

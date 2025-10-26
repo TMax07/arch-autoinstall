@@ -3,8 +3,9 @@
 echo "Welcome to TMax07's arch install helper script :D"
 
 echo "Enabeling NetworkManager..."
-sudo systemctl enable --now NetworkManager.service > /dev/null # check if already running
+sudo systemctl enable --now NetworkManager.service > /dev/null
 
+# Network
 echo "Testing for network connection..."
 while true; do
     if ping -c 1 ping.archlinux.org
@@ -30,36 +31,49 @@ while true; do
     fi
 done 
 
-sudo chmod +x /install/scripts/*
-sudo git clone https://github.com/TMax07/arch-configs.git /config
-
+# Installation preset
 while true; do
-    echo "Please choose a preset: "
-    echo "1) Desktop   2) Laptop"
+    echo "This script will need configuration data in '/config'"
+    echo "Please decide on a preset: "
+    echo "1) Desktop   2) Laptop   3) My own (Skip git clone)"
     read -p "" USER_IN
     if [[ "$USER_IN" == "1" ]]
     then
-        sudo chmod +x /install/desktop-config.sh 
-        /install/desktop-config.sh
+        sudo git clone https://github.com/TMax07/arch-configs.git /config
         break
     fi
-    if [[ "$USER_IN" == "2" ]]
+    elif [[ "$USER_IN" == "2" ]]
     then
-        sudo chmod +x /install/laptop-config.sh
-        /install/laptop-config.sh
+        echo "Still in development, net yet here... :("
+        break
+    elif [[ "$USER_IN" == "3" ]]
+    then
+        echo "Skipping git clone..."
+        echo "Assuming the directory has already been initialized..."
         break
     else
         echo "Please choose a valid preset..."
     fi
 done
 
+# early configuration
+sudo chmod +x /install/scripts/*
+/install/scripts/reflector.sh
+/install/scripts/pacman.sh
+/install/scripts/timesyncd.sh
+/install/scripts/yay.sh
+/install/scripts/flatpak.sh
+
+# system packages
 sudo chmod +x /install/package_install.sh
 /install/package_install.sh
 
+# rm autostart
 echo "Removing installer script autostart entry..."
 USER=$(whoami)
 sudo sed '/###--t--###--m--###--p--###/,/###--t--###--m--###--p--###/' /home/$USER/.bash_profile > /home/$USER/.bash_profile
 
+# delete installation files
 while true; do
     echo "Would you like to remove the install scripts? Yn"
     read USER_IN

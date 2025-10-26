@@ -48,31 +48,31 @@ current_group=0
 include_group=true
 cur_pacman_pkgs=""
 cur_yay_pkgs=""
-cur_flatpak_pks=""
-cur_flathub_pks=""
+cur_flatpak_pkgs=""
+cur_flathub_pkgs=""
 
 function install_pkgs() {
-    if [[ "$cur_flathub_pks" != "" ]]
-    then
-        flatpak install flathub -y "$cur_flathub_pks"
-    fi
-    if [[ "$cur_flatpak_pks" != "" ]]
-    then
-        flatpak install -y "$cur_flatpak_pks"
-    fi
-    if [[ "$cur_yay_pkgs" != "" ]]
-    then
-        yay -S --noconfirm "$cur_yay_pkgs"
-    fi
-    if [[ "$cur_pacman_pkgs" != "" ]]
-    then
-        pacman -S --noconfirm "$cur_pacman_pkgs"
-    fi
+    local pac="$1"
+    local yay="$2"
+    local pak="$3"
+    local hub="$4"
 
-    cur_pacman_pkgs=""
-    cur_yay_pkgs=""
-    cur_flatpak_pks=""
-    cur_flathub_pks=""
+    if [[ "$pac" != "" ]]
+    then
+        pacman -S --noconfirm "$pac"
+    fi
+    if [[ "$yay" != "" ]]
+    then
+        yay -S --noconfirm "$yay"
+    fi
+    if [[ "$pak" != "" ]]
+    then
+        flatpak install -y "$pak"
+    fi
+    if [[ "$hub" != "" ]]
+    then
+        flatpak install flathub -y "$hub"
+    fi
 }
 
 for line in $INPUT_FILE_TXT
@@ -119,11 +119,11 @@ do
             #yay -S --noconfirm "$PKG_NAME"
             ;;
         flatpak)
-            cur_flatpak_pks="$cur_flatpak_pks $PKG_NAME"
+            cur_flatpak_pkgs="$cur_flatpak_pkgs $PKG_NAME"
             #flatpak install -y "$PKG_NAME"
             ;;
         flathub)
-            cur_flathub_pks="$cur_flathub_pks $PKG_NAME"
+            cur_flathub_pkgs="$cur_flathub_pkgs $PKG_NAME"
             #flatpak install flathub -y "$PKG_NAME"
             ;;
         *)
@@ -135,7 +135,11 @@ do
     # Run optional post-install script
     # Break batch on install script
     if [[ -n "$SCRIPT_PATH" && -f "$SCRIPT_PATH" ]]; then
-        install_pkgs
+        install_pkgs "$cur_pacman_pkgs" "$cur_yay_pkgs" "$cur_flatpak_pkgs" "$cur_flathub_pkgs"
+        cur_pacman_pkgs=""
+        cur_yay_pkgs=""
+        cur_flatpak_pkgs=""
+        cur_flathub_pkgs=""
 
         sudo chmod +x "$SCRIPT_PATH"
         sudo bash "$SCRIPT_PATH"
@@ -143,4 +147,4 @@ do
 done
 
 # straggling packages
-install_pkgs
+install_pkgs "$cur_pacman_pkgs" "$cur_yay_pkgs" "$cur_flatpak_pkgs" "$cur_flathub_pkgs"

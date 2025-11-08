@@ -17,7 +17,7 @@ else
     exit
 fi
 
-NO_CONFIRM=0
+NO_CONFIRM="0"
 SWAP_PART_SIZE=""
 ZSWAP_ENABLED=""
 ZONE=""
@@ -76,7 +76,7 @@ PACSTRAP_PACKAGES="base base-devel linux linux-firmware nano git btrfs-progs net
 
 # Greet
 echo "Welcome to TMax07's arch install script :D"
-if [[ "$NO_CONFIRM" == "$0" ]]
+if [[ "$NO_CONFIRM" == "0" ]]
 then
     echo "You will be asked to confirm some settings and choose a few options"
     echo "This script supports (almost) silent installs. Start the script with '--help' to list the options that need to be specified for silent installs"
@@ -96,6 +96,27 @@ then
             break
         else
             echo "Invalid option, please try again"
+        fi
+    done
+fi
+
+USE_PACSERVE="0"
+if [[ "$NO_CONFIRM" == "0"  ]]
+then
+    while true; do 
+        echo "Is this a VM install with the host using pacserve? yN"
+        read USER_IN
+        if [[ "$USER_IN" == "y" || "$USER_IN" == "Y" ]]
+        then 
+            echo "Using pacserve..."
+            USE_PACSERVE="1"
+            break
+        elif [[ "$USER_IN" == "n" || "$USER_IN" == "N" || "$USER_IN" == "" ]]
+        then 
+            echo "Using pacman mirrors..."
+            break
+        else 
+            echo "Not a vailid option"
         fi
     done
 fi
@@ -421,7 +442,18 @@ fi
 
 # update the mirrorlist 
 echo "--- Updating pacman mirrorlist..."
-reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+if [[ "$USE_PACSERVE" == "0" ]]
+then 
+    echo "Running relector..."
+    reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+else
+    echo "Using pacserve..."
+    echo "Server = http://192.168.122.1:15678/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist
+fi
+
+# save mirrorlist to new install
+echo "Copying pacman mirrorlist to new install..."
+cp -f /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
 
 # install the most basic packages
 echo "--- Running pacstrap with most basic packages..."
